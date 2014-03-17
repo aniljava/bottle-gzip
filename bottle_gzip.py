@@ -31,7 +31,7 @@
     from compressor import CompressorPlugin
 
     compressor_plugin = CompressorPlugin()
-	bottle.install(compressor_plugin)
+    bottle.install(compressor_plugin)
 
     @get('/text')
     def text():
@@ -51,9 +51,9 @@ import zlib
 from bottle import request, response, HTTPResponse
 
 
-__author__ =  'Li Gang, Roy Shan'
-__version__=  '0.1'
-__email__  =  'ligang at ibkon.com, roy at ibkon.com'
+__author__ = 'Li Gang, Roy Shan'
+__version__ = '0.1'
+__email__ = 'ligang at ibkon.com, roy at ibkon.com'
 
 
 # encoding type enum
@@ -63,14 +63,14 @@ Gzip_Encoding, Deflate_Encoding = range(1, 3)
 def compress(data, compression_level):
     """
     Compress data with gzip encoding
-    
+
     Keyword arguments:
     data -- data to be compressed
     compression_level -- which level of gzip compression to use, from 0 to 9
     """
     buffer = cStringIO.StringIO()
     gz_file = GzipFile(None, 'wb', compression_level, buffer)
-    if isinstance(data, unicode): 
+    if isinstance(data, unicode):
         data = data.encode(response.charset)
     gz_file.write(data)
     gz_file.close()
@@ -85,7 +85,7 @@ def parse_encoding_header(header):
 
     Keyword arguments:
     header -- HTTP_ACCEPT_ENCODING header
-    """ 
+    """
     encodings = {}
     for encoding in header.split(','):
         if encoding.find(';') > -1:
@@ -124,20 +124,28 @@ def client_wants_encoding(accept_encoding_header):
         return None
 
 
-DEFAULT_COMPRESSABLES = set(['text/plain', 'text/html', 'text/css',
-'application/json', 'application/x-javascript', 'text/xml',
-'application/xml', 'application/xml+rss', 'text/javascript'])
-        
+DEFAULT_COMPRESSABLES = set([
+                            'text/plain',
+                            'text/html',
+                            'text/css',
+                            'application/json',
+                            'application/x-javascript',
+                            'text/xml',
+                            'application/xml',
+                            'application/xml+rss',
+                            'text/javascript'
+                            ])
+
 
 class CompressorPlugin(object):
+
     """
     Bottle plugin for compressing content
     """
     name = 'compressor_plugin'
     api = 2
 
-    def __init__(self, content_types=DEFAULT_COMPRESSABLES, compress_level=6,\
-                    minimal_size=200):
+    def __init__(self, content_types=DEFAULT_COMPRESSABLES, compress_level=6, minimal_size=200):
         """
         Initialize attribute values
 
@@ -150,7 +158,6 @@ class CompressorPlugin(object):
         self.compress_level = compress_level
         self.minimal_size = minimal_size
 
-
     def apply(self, callback, route):
         """
         Decorate route callback
@@ -158,11 +165,11 @@ class CompressorPlugin(object):
         keyword arguments:
         callback -- the route callback to be decorated
         context  -- an instance of Route and provides a lot of meta-information
-                    and context for that route 
+                    and context for that route
         """
         content_types = self.content_types
         compress_level = self.compress_level
-        minimal_size = self.minimal_size 
+        minimal_size = self.minimal_size
 
         def wrapper(*args, **kwargs):
             """
@@ -177,26 +184,25 @@ class CompressorPlugin(object):
             # ignore redirect
             if response.status_code >= 300 and response.status_code < 400:
                 return data
-            
+
             # ignore encoded data
             if 'Content-Encoding' in response.headers:
                 return data
 
             # ignore non-compressable types
             content_type = response.headers.get('Content-Type')
-            ctype = content_type.split(';')[0]
-            if ctype not in content_types:
-                return data
+            if content_type:
+                ctype = content_type.split(';')[0]
+                if ctype not in content_types:
+                    return data
 
             # ie bug
             user_agent = request.headers.get('User-Agent')
-            if user_agent and 'msie' in user_agent.lower() \
-                and 'javascript' in ctype:
+            if user_agent and 'msie' in user_agent.lower() and 'javascript' in ctype:
                 return data
 
             accept_encoding = request.headers.get('Accept-Encoding')
-            encoding_type = client_wants_encoding(accept_encoding) \
-                if accept_encoding else None 
+            encoding_type = client_wants_encoding(accept_encoding) if accept_encoding else None
 
             if encoding_type:
                 data = ''.join(data)
